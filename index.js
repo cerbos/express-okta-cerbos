@@ -10,7 +10,6 @@ import db from "./db.js";
 dotenv.config();
 const { ExpressOIDC } = OKTA;
 
-console.log(process.env.CERBOS_PLAYGROUND);
 const cerbos = new Cerbos({
   hostname: process.env.CERBOS_HOSTNAME, // The Cerbos PDP instance
   playgroundInstance: process.env.CERBOS_PLAYGROUND, // The playground instance ID to test
@@ -74,7 +73,7 @@ app.get("/contacts/:id", oidc.ensureAuthenticated(), async (req, res) => {
   const allowed = await cerbos.check({
     principal: {
       id: req.userContext.userinfo.sub,
-      roles: req.userContext.userinfo.roles || ["user"],
+      roles: req.userContext.userinfo.groups,
     },
     resource: {
       kind: "contact",
@@ -101,7 +100,7 @@ app.post("/contacts/new", oidc.ensureAuthenticated(), async (req, res) => {
   const allowed = await cerbos.check({
     principal: {
       id: req.userContext.userinfo.sub,
-      roles: req.userContext.userinfo.roles || ["user"],
+      roles: req.userContext.userinfo.groups,
     },
     resource: {
       kind: "contact",
@@ -130,7 +129,7 @@ app.patch("/contacts/:id", oidc.ensureAuthenticated(), async (req, res) => {
   const allowed = await cerbos.check({
     principal: {
       id: req.userContext.userinfo.sub,
-      roles: req.userContext.userinfo.roles || ["user"],
+      roles: req.userContext.userinfo.groups,
     },
     resource: {
       kind: "contact",
@@ -162,7 +161,7 @@ app.delete("/contacts/:id", oidc.ensureAuthenticated(), async (req, res) => {
   const allowed = await cerbos.check({
     principal: {
       id: req.userContext.userinfo.sub,
-      roles: req.userContext.userinfo.roles || ["user"],
+      roles: req.userContext.userinfo.groups,
     },
     resource: {
       kind: "contact",
@@ -193,7 +192,7 @@ app.get("/contacts", oidc.ensureAuthenticated(), async (req, res) => {
   const allowed = await cerbos.check({
     principal: {
       id: req.userContext.userinfo.sub,
-      roles: req.userContext.userinfo.roles || ["user"],
+      roles: req.userContext.userinfo.groups,
     },
     resource: {
       kind: "contact",

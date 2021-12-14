@@ -26,13 +26,13 @@ const oidc = new ExpressOIDC({
   scope: "openid profile",
 });
 
-// const __dirname = path.resolve();
-// app.set("views", path.join(__dirname, "views"));
-// app.set("view engine", "pug");
+const __dirname = path.resolve();
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "pug");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-// app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "public")));
 
 app.use(
   session({
@@ -43,16 +43,40 @@ app.use(
 );
 app.use(oidc.router);
 
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
   if (req.userContext) {
-    res.send(`
-      Hello ${req.userContext.userinfo.name}!
-      <form method="POST" action="/logout">
-        <button type="submit">Logout</button>
-      </form>
-    `);
+    // fetch Cerbos response to display for demo purposes
+    const contacts = db.find(req.params.id);
+    const cerbosRequest = {
+      principal: {
+        id: req.userContext.userinfo.sub,
+        roles: req.userContext.userinfo.groups,
+        attr: req.userContext.userinfo,
+      },
+      resource: {
+        kind: "contact",
+        instances: contacts.reduce(function (result, item, index, array) {
+          result[item.id] = { attr: item }; //a, b, c
+          return result;
+        }, {}),
+      },
+      actions: ["list"],
+    };
+    // check user is authorized
+    const cerbosResponse = await cerbos.check(cerbosRequest);
+
+    res.render("index-loggedin", {
+      title: "Cerbos/Okta Demo",
+      subtitle: `Logged in as ${req.userContext.userinfo.name}`,
+      user: req.userContext.userinfo,
+      cerbosRequest,
+      cerbosResponse,
+    });
   } else {
-    res.send('Please <a href="/login">login</a>');
+    res.render("index-loggedout", {
+      title: "Cerbos/Okta Demo",
+      subtitle: `Not logged in`,
+    });
   }
 });
 
@@ -197,7 +221,7 @@ app.get("/contacts", oidc.ensureAuthenticated(), async (req, res) => {
     resource: {
       kind: "contact",
       instances: contacts.reduce(function (result, item, index, array) {
-        result[item.id] = item; //a, b, c
+        result[item.id] = { attr: item };
         return result;
       }, {}),
     },

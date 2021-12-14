@@ -2,5 +2,27 @@ doctype html
 html
   head
     title= title
-  body
-    block content
+    script(src="https://cdn.tailwindcss.com")
+    link(rel='stylesheet' href='//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css')
+    script(src='//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js')
+    script.
+      hljs.highlightAll();
+  body(class="antialiased font-sans bg-gray-200")
+    div(class="max-w-7xl mx-auto py-12 sm:px-6 lg:px-8")
+      dic(class="max-w-4xl mx-auto")
+        div(class="bg-white shadow overflow-hidden sm:rounded-lg")
+          div(class='px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200')
+            div(class="flex")
+              div(class="flex-2")
+                h1.text-lg.leading-6.font-medium.text-gray-900
+                  | #{title}
+                p.mt-1.max-w-2xl.text-sm.text-gray-500
+                  | #{subtitle}
+              div(class="flex-1 text-right")
+                if user
+                    form(method="POST",action="/logout")
+                      button(type="submit", class="bg-sky-600 hover:bg-sky-700 text-white px-2 py-1 m-2 inline-block rounded") Logout
+                else
+                  a(href='/login', class="bg-sky-600 hover:bg-sky-700 text-white px-2 py-1 m-2 inline-block rounded") Login
+          div(class="px-4 py-5")
+            block content

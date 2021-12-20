@@ -51,7 +51,6 @@ app.get("/", async (req, res) => {
       principal: {
         id: req.userContext.userinfo.sub,
         roles: req.userContext.userinfo.groups,
-        attr: req.userContext.userinfo,
       },
       resource: {
         kind: "contact",

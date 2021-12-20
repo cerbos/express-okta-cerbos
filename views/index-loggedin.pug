@@ -10,7 +10,7 @@ block content
           = JSON.stringify(user, null, 2)
     div(class="flex-1")
       h2.leading-6.font-medium.text-gray-900 Cerbos
-      p.text-sm.text-gray-500 The authorization request to the Cerbos PDP.
+      p.text-sm.text-gray-500 The authorization request to the Cerbos PDP. The Okta groups are passed in to the roles of the principal object to be used in policy decision making.
       pre(class="text-sm m-2")
         code(class="language-json")
           = JSON.stringify(cerbosRequest, null, 2)      

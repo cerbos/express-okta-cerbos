@@ -17,6 +17,10 @@ This example has a simple CRUD policy in place for a resource kind of `contact` 
 
 <a href="https://play.cerbos.dev/p/sZC611cf06deexP0q8CTcVufTVau1SA3" target="_blank"><img src="docs/launch.jpg" height="48" /></a>
 
+> For simplicity this demo is using the hosted Cerbos Demo PDP avaliable in the Playground so running the Cerbos container locally isn't required. For production use cases a deployed Cerbos PDP is required and the code updated to point to your instance. You can read more about the deployment options [here](https://docs.cerbos.dev/cerbos/latest/deployment/index.html).
+
+
+
 The policy expects one of two roles to be set on the principal - `admin` and `user`. These roles are authorized as follows:
 
 | Action | User     | Admin |

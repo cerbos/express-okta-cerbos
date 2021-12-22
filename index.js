@@ -13,7 +13,6 @@ const { ExpressOIDC } = OKTA;
 const cerbos = new Cerbos({
   hostname: process.env.CERBOS_HOSTNAME, // The Cerbos PDP instance
   playgroundInstance: process.env.CERBOS_PLAYGROUND, // The playground instance ID to test
-  logLevel: "debug", // The level of logging to use
 });
 
 const app = express();
@@ -59,7 +58,7 @@ app.get("/", async (req, res) => {
           return result;
         }, {}),
       },
-      actions: ["list"],
+      actions: ["update", "delete"],
     };
     // check user is authorized
     const cerbosResponse = await cerbos.check(cerbosRequest);

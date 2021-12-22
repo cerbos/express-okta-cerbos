@@ -1,20 +1,22 @@
 extends layout
 
 block content
-  div(class="flex gap-2")
-    div(class="flex-1")
+  div.text-md.mb-4
+    p This is an example project of using Okta for authentication and Cerbos to authorize access to contact resources in a demo CRM system. You can find the code for this on <a href="https://github.com/cerbos/express-okta-cerbos">Github</a> and more about Cerbos <a href="https://cerbos.dev">on our website</a>.
+  div(class="md:flex gap-2")
+    div(class="flex-1 mb-6 md:mb-0")
       h2.leading-6.font-medium.text-gray-900 Okta Profile
       p.text-sm.text-gray-500 The user profile information returned from Okta.
-      pre(class="text-sm m-2")
+      pre(class="text-sm rounded my-2")
         code(class="language-json")
           = JSON.stringify(user, null, 2)
     div(class="flex-1")
       h2.leading-6.font-medium.text-gray-900 Cerbos
-      p.text-sm.text-gray-500 The authorization request to the Cerbos PDP. The Okta groups are passed in to the roles of the principal object to be used in policy decision making.
-      pre(class="text-sm m-2")
+      p.text-sm.text-gray-500 The authorization request to the Cerbos PDP. The Okta groups are passed in to the roles of the principal object to be used in policy decision making. In this example a check is made whether the user is allowed to update or delete the contact resouces in a CRM system.
+      pre(class="text-sm rounded my-2")
         code(class="language-json")
           = JSON.stringify(cerbosRequest, null, 2)      
       p.text-sm.text-gray-500 The authorization response from the Cerbos PDP.
-      pre(class="text-sm m-2")
+      pre(class="text-sm rounded my-2")
         code(class="language-json")
           = JSON.stringify(cerbosResponse, null, 2)                

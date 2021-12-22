@@ -4,6 +4,13 @@ html
     title= title
     script(src="https://cdn.tailwindcss.com")
     link(rel='stylesheet' href='//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css')
+    style(type="text/tailwindcss").
+      @layer base {
+        a {
+          @apply underline;
+        }
+      }
+
     script(src='//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js')
     script.
       hljs.highlightAll();

@@ -1,11 +1,11 @@
 const contacts = [
   {
-    id: "abc123",
+    id: "contact-1",
     name: "John Smith",
     email: "john@acme.com",
   },
   {
-    id: "def789",
+    id: "contact-2",
     name: "Sarah Jane",
     email: "sarah@acme.com",
   },

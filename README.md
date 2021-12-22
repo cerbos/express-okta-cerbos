@@ -65,7 +65,7 @@ OKTA_APP_BASE_URL=http://localhost:8080
 
 ### Test the app
 
-Now that everything is wired up you should be able to goto [`http://localhost:8080`](http://localhost:8080) and press the login link to authenticate with your FusionAuth account.
+Now that everything is wired up you should be able to goto [`http://localhost:8080`](http://localhost:8080) and press the login link to authenticate with your Okta account.
 
 ## Policies
 

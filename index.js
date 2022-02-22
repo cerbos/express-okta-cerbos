@@ -1,7 +1,7 @@
 import path from "path";
 import dotenv from "dotenv";
 import express from "express";
-import { Cerbos } from "cerbos";
+import { Cerbos } from "@cerbos/sdk";
 import session from "express-session";
 
 import OKTA from "@okta/oidc-middleware";

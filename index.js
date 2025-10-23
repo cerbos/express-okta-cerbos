@@ -1,7 +1,7 @@
 import path from "path";
 import dotenv from "dotenv";
 import express from "express";
-import { Cerbos } from "@cerbos/sdk";
+import { HTTP as Cerbos } from "@cerbos/http";
 import session from "express-session";
 
 import OKTA from "@okta/oidc-middleware";
@@ -10,12 +10,22 @@ import db from "./db.js";
 dotenv.config();
 const { ExpressOIDC } = OKTA;
 
-const cerbos = new Cerbos({
-  hostname: process.env.CERBOS_HOSTNAME, // The Cerbos PDP instance
-  playgroundInstance: process.env.CERBOS_PLAYGROUND, // The playground instance ID to test
+const cerbos = new Cerbos(process.env.CERBOS_HOSTNAME, {
+  playgroundInstanceId: process.env.CERBOS_PLAYGROUND_INSTANCEID,
 });
 
 const app = express();
+
+const buildPrincipal = (userinfo) => ({
+  id: userinfo.sub,
+  roles: userinfo.groups ?? [],
+});
+
+const toContactResource = (contact) => ({
+  kind: "contact",
+  id: contact.id,
+  attr: contact,
+});
 
 const oidc = new ExpressOIDC({
   issuer: `https://${process.env.OKTA_DOMAIN}/oauth2/default`,
@@ -45,23 +55,25 @@ app.use(oidc.router);
 app.get("/", async (req, res) => {
   if (req.userContext) {
     // fetch Cerbos response to display for demo purposes
+    const principal = buildPrincipal(req.userContext.userinfo);
     const contacts = db.find(req.params.id);
-    const cerbosRequest = {
+    const cerbosRequest = contacts.map((contact) => ({
       principal: {
-        id: req.userContext.userinfo.sub,
-        roles: req.userContext.userinfo.groups,
+        ...principal,
+        roles: [...principal.roles],
       },
-      resource: {
-        kind: "contact",
-        instances: contacts.reduce(function (result, item, index, array) {
-          result[item.id] = { attr: item }; //a, b, c
-          return result;
-        }, {}),
-      },
+      resource: toContactResource(contact),
       actions: ["update", "delete"],
-    };
+    }));
     // check user is authorized
-    const cerbosResponse = await cerbos.check(cerbosRequest);
+    const cerbosDecisions = await Promise.all(
+      cerbosRequest.map((request) => cerbos.checkResource(request))
+    );
+    const cerbosResponse = cerbosDecisions.map((decision) => ({
+      resource: decision.resource,
+      actions: decision.actions,
+      allowedActions: decision.allowedActions(),
+    }));
 
     res.render("index-loggedin", {
       title: "Cerbos/Okta Demo",
@@ -91,25 +103,16 @@ app.get("/contacts/:id", oidc.ensureAuthenticated(), async (req, res) => {
     return res.status(404).json({ error: "Contact not found" });
   }
 
+  const principal = buildPrincipal(req.userContext.userinfo);
   // check user is authorized
-  const allowed = await cerbos.check({
-    principal: {
-      id: req.userContext.userinfo.sub,
-      roles: req.userContext.userinfo.groups,
-    },
-    resource: {
-      kind: "contact",
-      instances: {
-        [contact.id]: {
-          attr: contact,
-        },
-      },
-    },
+  const decision = await cerbos.checkResource({
+    principal,
+    resource: toContactResource(contact),
     actions: ["read"],
   });
 
   // authorized for read action
-  if (allowed.isAuthorized(contact.id, "read")) {
+  if (decision.isAllowed("read")) {
     return res.json(contact);
   } else {
     return res.status(403).json({ error: "Unauthorized" });
@@ -119,22 +122,18 @@ app.get("/contacts/:id", oidc.ensureAuthenticated(), async (req, res) => {
 // CREATE
 app.post("/contacts/new", oidc.ensureAuthenticated(), async (req, res) => {
   // check user is authorized
-  const allowed = await cerbos.check({
-    principal: {
-      id: req.userContext.userinfo.sub,
-      roles: req.userContext.userinfo.groups,
-    },
+  const principal = buildPrincipal(req.userContext.userinfo);
+  const decision = await cerbos.checkResource({
+    principal,
     resource: {
       kind: "contact",
-      instances: {
-        new: {},
-      },
+      id: "new",
     },
     actions: ["create"],
   });
 
   // authorized for create action
-  if (allowed.isAuthorized("new", "create")) {
+  if (decision.isAllowed("create")) {
     return res.json({ result: "Created contact" });
   } else {
     return res.status(403).json({ error: "Unauthorized" });
@@ -148,23 +147,14 @@ app.patch("/contacts/:id", oidc.ensureAuthenticated(), async (req, res) => {
     return res.status(404).json({ error: "Contact not found" });
   }
 
-  const allowed = await cerbos.check({
-    principal: {
-      id: req.userContext.userinfo.sub,
-      roles: req.userContext.userinfo.groups,
-    },
-    resource: {
-      kind: "contact",
-      instances: {
-        [contact.id]: {
-          attr: contact,
-        },
-      },
-    },
+  const principal = buildPrincipal(req.userContext.userinfo);
+  const decision = await cerbos.checkResource({
+    principal,
+    resource: toContactResource(contact),
     actions: ["update"],
   });
 
-  if (allowed.isAuthorized(req.params.id, "update")) {
+  if (decision.isAllowed("update")) {
     return res.json({
       result: `Updated contact ${req.params.id}`,
     });
@@ -180,23 +170,14 @@ app.delete("/contacts/:id", oidc.ensureAuthenticated(), async (req, res) => {
     return res.status(404).json({ error: "Contact not found" });
   }
 
-  const allowed = await cerbos.check({
-    principal: {
-      id: req.userContext.userinfo.sub,
-      roles: req.userContext.userinfo.groups,
-    },
-    resource: {
-      kind: "contact",
-      instances: {
-        [contact.id]: {
-          attr: contact,
-        },
-      },
-    },
+  const principal = buildPrincipal(req.userContext.userinfo);
+  const decision = await cerbos.checkResource({
+    principal,
+    resource: toContactResource(contact),
     actions: ["delete"],
   });
 
-  if (allowed.isAuthorized(req.params.id, "delete")) {
+  if (decision.isAllowed("delete")) {
     return res.json({
       result: `Contact ${req.params.id} deleted`,
     });
@@ -209,25 +190,23 @@ app.delete("/contacts/:id", oidc.ensureAuthenticated(), async (req, res) => {
 app.get("/contacts", oidc.ensureAuthenticated(), async (req, res) => {
   // load the contacts
   const contacts = db.find(req.params.id);
+  const principal = buildPrincipal(req.userContext.userinfo);
 
   // check user is authorized
-  const allowed = await cerbos.check({
-    principal: {
-      id: req.userContext.userinfo.sub,
-      roles: req.userContext.userinfo.groups,
-    },
-    resource: {
-      kind: "contact",
-      instances: contacts.reduce(function (result, item, index, array) {
-        result[item.id] = { attr: item };
-        return result;
-      }, {}),
-    },
-    actions: ["list"],
-  });
+  const decisions = await Promise.all(
+    contacts.map((contact) =>
+      cerbos.checkResource({
+        principal,
+        resource: toContactResource(contact),
+        actions: ["list"],
+      })
+    )
+  );
 
   // filter only those authorised
-  const result = contacts.filter((c) => allowed.isAuthorized(c.id, "list"));
+  const result = contacts.filter((contact, index) =>
+    decisions[index].isAllowed("list")
+  );
 
   // return the contact
   return res.json(result);

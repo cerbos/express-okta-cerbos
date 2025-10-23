@@ -14,7 +14,7 @@ An example stack of integrating [Cerbos](https://cerbos.dev) with an [Express](h
 
 ### Install Deps
 
-Clone this repoo and run `npm install`
+Clone this repo and run `npm install`
 
 ### Create an Okta Application
 
@@ -49,7 +49,7 @@ Under _Directory > Groups_ press _Add Group_ and create the two groups and add y
 
 ### Setup Environment Variables
 
-Make a copy of the `.env.sample` file and call it `.env`. You will then need to populate the feilds that begin with `OKTA_` with the information provided in the new application you created.
+Make a copy of the `.env.sample` file and call it `.env`. You will then need to populate the fields that begin with `OKTA_` with the information provided in the new application you created.
 
 ```
 PORT=8080
@@ -61,7 +61,26 @@ OKTA_CLIENTSECRET=
 OKTA_APP_BASE_URL=http://localhost:8080
 ```
 
->This example is using the hosted Demo PDP of Cerbos and an example Playground instance. If you are running your own Cerbos PDP then update the `CERBOS_HOSTNAME` feild to your own instance and remove the `CERBOS_PLAYGROUND` feild.
+>This example is using the hosted Demo PDP of Cerbos and an example Playground instance. If you are running your own Cerbos PDP then update the `CERBOS_HOSTNAME` field to your own instance and remove the `CERBOS_PLAYGROUND` field.
+
+### Running a local Cerbos PDP (optional)
+
+If you prefer to run Cerbos locally instead of using the hosted demo PDP, you can use the Cerbos CLI. From the project root run:
+
+```
+npx cerbos@latest server \
+  --set=storage.driver=disk \
+  --set=storage.disk.directory=./policies
+```
+
+This will start a PDP with the policies in the `./policies` directory listening on `http://127.0.0.1:3592`. Update your `.env` to point to it by setting:
+
+```
+CERBOS_HOSTNAME=http://127.0.0.1:3592
+CERBOS_PLAYGROUND=
+```
+
+> Leave `CERBOS_PLAYGROUND` empty (or remove the line entirely) when using a local PDP.
 
 ### Test the app
 
@@ -92,28 +111,25 @@ The policy expects one of two roles to be set on the principal - `admin` and `us
 4. That token is then exchanged for the user profile information
 5. The user profile from Okta being stored (user Id, roles etc).
 6. Any requests to the `/contacts` endpoints fetch the data required about the resource being accessed from the data store
-7. Call the Cerbos PDP with the principal, resource and action to check the authorization and then return an error if the user is not authorized. The [Cerbos package](https://www.npmjs.com/package/cerbos) is used for this.
+7. Call the Cerbos PDP with the principal, resource and action to check the authorization and then return an error if the user is not authorized. The [Cerbos HTTP client](https://www.npmjs.com/package/@cerbos/http) is used for this.
 
 ```js
-const allowed = await cerbos.check({
-  principal: { //pass in the Okta user ID and groups
+const decision = await cerbos.checkResource({
+  // pass in the Okta user ID and groups
+  principal: {
     id: req.userContext.userinfo.sub,
     roles: req.userContext.userinfo.groups,
   },
   resource: {
     kind: "contact",
-    instances: {
-      //a map of the resource(s) being accessed
-      [contact.id]: {
-        attr: contact,
-      },
-    },
+    id: contact.id,
+    attr: contact,
   },
   actions: ["read"], //the list of actions being performed
 });
 
 // not authorized for read action
-if (!allowed.isAuthorized(contact.id, "read")) {
+if (!decision.isAllowed("read")) {
   return res.status(403).json({ error: "Unauthorized" });
 }
 ```
